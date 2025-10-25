@@ -1,5 +1,5 @@
-const fastify = require("fastify");
-const crypto = require("node:crypto");
+import fastify from "fastify";
+import crypto from "node:crypto";
 
 const server = fastify();
 
@@ -9,8 +9,8 @@ const courses = [
   { id: "3", title: "curso de React Native" },
 ];
 
-server.get("/", () => {
-  return "get ok";
+server.get("/", (request, reply) => {
+  return reply.status(200).send();
 });
 
 server.get("/courses", (request, reply) => {
@@ -18,7 +18,13 @@ server.get("/courses", (request, reply) => {
 });
 
 server.get("/courses/:id", (request, reply) => {
-  const courseId = request.params.id;
+  type Params = {
+    id: string;
+  };
+
+  const params = request.params as Params;
+
+  const courseId = params.id;
 
   const course = courses.find((course) => course.id == courseId);
 
@@ -30,11 +36,21 @@ server.get("/courses/:id", (request, reply) => {
 });
 
 server.post("/courses", (request, reply) => {
+  type RequestBody = {
+    title: string;
+  };
+
+  const requestBody = request.body as RequestBody;
+
   const courseId = crypto.randomUUID();
+  const courseTitle = requestBody.title;
 
-  courses.push({ id: courseId, title: "novo curso" });
+  if (!courseTitle)
+    return reply.status(400).send({ erro: "O título é obrigatório!" });
 
-  return reply.status(201).send({ courseId: courseId });
+  courses.push({ id: courseId, title: courseTitle });
+
+  return reply.status(201).send({ courseId, courseTitle });
 });
 
 server.listen({ port: 3333 }).then(() => {
