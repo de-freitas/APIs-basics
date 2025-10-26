@@ -4,17 +4,24 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "npx ts-node server.ts"
+    "dev": "npx ts-node server.ts",
+    "services:up": "docker compose --file infra/compose.yaml up --detach",
+    "services:down": "docker compose --file infra/compose.yaml down",
+    "migrations:create": "npx drizzle-kit generate",
+    "migrations:up": "npx drizzle-kit migrate"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "fastify": "^5.6.1"
+    "drizzle-orm": "^0.44.7",
+    "fastify": "^5.6.1",
+    "pg": "^8.16.3"
   },
   "devDependencies": {
     "@types/node": "^24.9.1",
+    "drizzle-kit": "^0.31.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
