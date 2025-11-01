@@ -13,7 +13,17 @@ import {
 } from "fastify-type-provider-zod";
 import { uuid, z } from "zod";
 
-const server = fastify().withTypeProvider<ZodTypeProvider>();
+const server = fastify({
+  logger: {
+    transport: {
+      target: `pino-pretty`,
+      options: {
+        translateTime: "HH:MM:ss Z",
+        ignore: "pid, hostname",
+      },
+    },
+  },
+}).withTypeProvider<ZodTypeProvider>();
 
 server.setValidatorCompiler(validatorCompiler);
 server.setSerializerCompiler(serializerCompiler);
