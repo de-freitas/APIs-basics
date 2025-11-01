@@ -11,7 +11,7 @@ import {
   validatorCompiler,
   type ZodTypeProvider,
 } from "fastify-type-provider-zod";
-import { z } from "zod";
+import { uuid, z } from "zod";
 
 const server = fastify().withTypeProvider<ZodTypeProvider>();
 
@@ -34,25 +34,30 @@ server.get("/courses", async (request, reply) => {
   return reply.status(200).send({ courses: result });
 });
 
-server.get("/courses/:id", async (request, reply) => {
-  type Params = {
-    id: string;
-  };
+server.get(
+  "/courses/:courseId",
+  {
+    schema: {
+      params: z.object({
+        courseId: z.uuid(),
+      }),
+    },
+  },
+  async (request, reply) => {
+    const courseId = request.params.courseId;
 
-  const params = request.params as Params;
-  const courseId = params.id;
+    const result = await database
+      .select()
+      .from(courses)
+      .where(eq(courses.id, courseId));
 
-  const result = await database
-    .select()
-    .from(courses)
-    .where(eq(courses.id, courseId));
+    if (result.length > 0) {
+      return reply.status(200).send({ course: result[0] });
+    }
 
-  if (result.length > 0) {
-    return reply.status(200).send({ course: result[0] });
+    return reply.status(404).send({ error: "course not found" });
   }
-
-  return reply.status(404).send({ error: "course not found" });
-});
+);
 
 server.post(
   "/courses",
