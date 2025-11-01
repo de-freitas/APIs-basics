@@ -6,8 +6,17 @@ import fastify from "fastify";
 import { database } from "./src/database/client";
 import { courses } from "./src/database/schema";
 import { eq } from "drizzle-orm";
+import {
+  serializerCompiler,
+  validatorCompiler,
+  type ZodTypeProvider,
+} from "fastify-type-provider-zod";
+import { z } from "zod";
 
-const server = fastify();
+const server = fastify().withTypeProvider<ZodTypeProvider>();
+
+server.setValidatorCompiler(validatorCompiler);
+server.setSerializerCompiler(serializerCompiler);
 
 server.get("/", (request, reply) => {
   return reply.status(200).send();
@@ -45,30 +54,33 @@ server.get("/courses/:id", async (request, reply) => {
   return reply.status(404).send({ error: "course not found" });
 });
 
-server.post("/courses", async (request, reply) => {
-  type RequestBody = {
-    title: string;
-    description?: string;
-  };
+server.post(
+  "/courses",
+  {
+    schema: {
+      body: z.object({
+        title: z.string().min(2, "Título precisa ter no mínimo 2 caracteres"),
+        description: z.string().optional(),
+      }),
+    },
+  },
+  async (request, reply) => {
+    const requestBody = request.body;
 
-  const requestBody = request.body as RequestBody;
+    const courseTitle = requestBody.title;
+    const courseDescription = requestBody.description;
 
-  const courseTitle = requestBody.title;
-  const courseDescription = requestBody.description;
+    const result = await database
+      .insert(courses)
+      .values({
+        title: courseTitle,
+        description: courseDescription,
+      })
+      .returning();
 
-  if (!courseTitle)
-    return reply.status(400).send({ erro: "O título é obrigatório!" });
-
-  const result = await database
-    .insert(courses)
-    .values({
-      title: courseTitle,
-      description: courseDescription,
-    })
-    .returning();
-
-  return reply.status(201).send({ courseId: result[0].id });
-});
+    return reply.status(201).send({ courseId: result[0].id });
+  }
+);
 
 server.listen({ port: 3333 }).then(() => {
   console.log("fastify server is running");
